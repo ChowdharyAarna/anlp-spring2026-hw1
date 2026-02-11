@@ -41,8 +41,10 @@ class LayerNorm(torch.nn.Module):
         Returns:
             torch.Tensor: The normalized tensor.
         """
-        # todo
-        raise NotImplementedError
+
+        mean = torch.mean(x, dim = -1, keepdim = True)
+        var = torch.var(x, dim = -1, keepdim = True, unbiased = False)
+        return (x - mean)/math.sqrt(var + self.eps)
 
     def forward(self, x):
         """
@@ -105,8 +107,27 @@ class Attention(nn.Module):
         An optimal implementation will compute attention for all heads
         jointly using matrix/tensor operations.
         '''
-        # todo
-        raise NotImplementedError
+        bs, n_local_heads, seqlen, head_dim = query.shape
+
+        # multiply Q and K
+        scores = torch.matmul(query, key.transpose(-2, -1))
+
+        # scale by dividing by d_k
+        scores = scores / math.sqrt(head_dim)
+
+        # create upper triangle mask to only keep positions <=i
+        mask = torch.triu(torch.ones(seqlen, seqlen), diagonal=1)
+        mask = mask.bool()[None, None, :, :]
+
+        # set positions not in use to negative infinity 
+        scores = scores.masked_fill(mask, torch.finfo(scores.dtype).min)
+
+        # softmax
+        attention_weights = torch.softmax(scores, dim = -1)
+
+        outputs = torch.matmul(attention_weights, value)
+
+        return outputs
 
 
     def forward(
@@ -205,13 +226,29 @@ class LlamaLayer(nn.Module):
         1) layer normalization of the input (via Root Mean Square layer normalization)
         2) self-attention on the layer-normalized input
         3) a residual connection (i.e., add the input to the output of the self-attention)
-        3) layer normalization on the output of the self-attention
-        4) a feed-forward network on the layer-normalized output of the self-attention
-        5) add a residual connection from the unnormalized self-attention output to the
+        4) layer normalization on the output of the self-attention
+        5) a feed-forward network on the layer-normalized output of the self-attention
+        6) add a residual connection from the unnormalized self-attention output to the
            output of the feed-forward network
         '''
-        # todo
-        raise NotImplementedError
+
+        # 1) layer normalization of the input (via Root Mean Square layer normalization)
+        normed_x = self.attention_norm.forward(x)
+
+        # 2) self-attention on the layer-normalized input
+        self_attention = self.attention.forward(normed_x)
+
+        # 3) a residual connection (i.e., add the input to the output of the self-attention)
+        with_residual = self_attention + x
+
+        # 4) layer normalization on the output of the self-attention
+        normed_with_residual = self.ffn_norm.forward(with_residual)
+
+        # 5) a feed-forward network on the layer-normalized output of the self-attention
+        post_ffn = self.feed_forward.forward(normed_with_residual)
+
+        # 6) add a residual connection from the unnormalized self-attention output to the output of the feed-forward network
+        return post_ffn + with_residual
 
 class Llama(LlamaPreTrainedModel):
     def __init__(self, config: LlamaConfig):
@@ -303,9 +340,35 @@ class Llama(LlamaPreTrainedModel):
                 '''
                 # todo 
 
-                raise NotImplementedError
+                # 1) Scale the logits with the temperature followed by normalization using Softmax.
+                probabilities = torch.softmax(logits / temperature, dim = -1)
+
+                # 2) Sort tokens by descending probability.
+                sorted_probs, sorted_indices = torch.sort(probabilities, descending=True)
+
+                # 3) Compute the cumulative probability distribution.
+                cumulative_probs = torch.cumsum(sorted_probs, dim = -1)
+
+                # 4) Select the smallest set of tokens whose cumulative probability is >= p.
+                crossing = (cumulative_probs >= top_p)
+                cutoff = crossing.float().argmax(dim=-1)
+
+                # 5) Mask out all tokens outside this nucleus.
+                B, V = sorted_probs.shape
+                positions = torch.arange(V, device=sorted_probs.device).unsqueeze(0).expand(B, V)
+                keep_mask = positions <= cutoff.unsqueeze(1)
+
+                filtered_probs = torch.where(keep_mask, sorted_probs, torch.zeros_like(sorted_probs))
+                
+                # 6) Renormalize the remaining probabilities so they sum to 1.
+                filtered_probs = filtered_probs / filtered_probs.sum(dim=-1, keepdim=True)
+
+
+                # 7) Sample from this filtered probability distribution.
+                sampled_sorted_pos = torch.multinomial(filtered_probs, num_samples=1)
+
                 # map to original vocab indices
-                idx_next = None
+                idx_next = torch.gather(sorted_indices, dim=-1, index=sampled_sorted_pos)
             
             # append sampled index to the running sequence and continue
             idx = torch.cat((idx, idx_next), dim=1)
