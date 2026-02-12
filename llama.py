@@ -116,7 +116,7 @@ class Attention(nn.Module):
         scores = scores / math.sqrt(head_dim)
 
         # create upper triangle mask to only keep positions <=i
-        mask = torch.triu(torch.ones(seqlen, seqlen), diagonal=1)
+        mask = torch.triu(torch.ones(seqlen, seqlen, device = device), diagonal=1)
         mask = mask.bool()[None, None, :, :]
 
         # set positions not in use to negative infinity 
