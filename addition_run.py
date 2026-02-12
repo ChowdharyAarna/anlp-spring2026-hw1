@@ -74,21 +74,21 @@ def train_one_epoch(model, loader, optimizer, device):
         # targets with the question part hidden (only showing the sum from the equation)
 
         B, T = input_ids.shape
-        mask = torch.zeros_like(labels, dtype=torch.bool)
+        mask = torch.zeros_like(target_ids, dtype=torch.bool)
         for i in range(B):
             eq_pos = (input_ids[i] == 12).nonzero(as_tuple=False)
             if len(eq_pos) == 0:
                 raise ValueError("Found a sequence with no '=' token.")
             mask[i, eq_pos[0].item():] = True
-        mask = mask & (labels >= 0)
-  0
+        mask = mask & (target_ids >= 0)
+  
 
         logits, _ = model(input_ids, targets=target_ids)
         logits = logits.reshape(-1, logits.size(-1))
-        labels = labels.reshape(-1)
+        target_ids = target_ids.reshape(-1)
         mask = mask.reshape(-1)
 
-        loss = F.cross_entropy(logits[mask], labels[mask])
+        loss = F.cross_entropy(logits[mask], target_ids[mask])
         
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -133,21 +133,21 @@ def evaluate_loss(model, loader, device):
 
         # targets with the question part hidden (only showing the sum from the equation)
         B, T = input_ids.shape
-        mask = torch.zeros_like(labels, dtype=torch.bool)
+        mask = torch.zeros_like(target_ids, dtype=torch.bool)
         for i in range(B):
             eq_pos = (input_ids[i] == 12).nonzero(as_tuple=False)
             if len(eq_pos) == 0:
                 raise ValueError("Found a sequence with no '=' token.")
             mask[i, eq_pos[0].item():] = True
-        mask = mask & (labels >= 0)
-  0
+        mask = mask & (target_ids >= 0)
+  
 
         logits, _ = model(input_ids, targets=target_ids)
         logits = logits.reshape(-1, logits.size(-1))
-        labels = labels.reshape(-1)
+        target_ids = target_ids.reshape(-1)
         mask = mask.reshape(-1)
 
-        loss = F.cross_entropy(logits[mask], labels[mask])
+        loss = F.cross_entropy(logits[mask], target_ids[mask])
         total_loss += loss.item()
         n_batches += 1
 
