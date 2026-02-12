@@ -80,22 +80,19 @@ def train_one_epoch(model, loader, optimizer, device):
         if not has_eq.all():
             raise ValueError("Found a sequence with no '=' token.")
         
-        first_eq = eq_mask.float().argmax(dim=1)
+        first_eq = eq_mask.int().argmax(dim=1)
 
 
-        B, T = masked_targets.shape
+        B, T = input_ids.shape
         positions = torch.arange(T, device=device)
         positions = positions.unsqueeze(0)
         positions = positions.expand(B, T)
 
-        cutoff = first_eq.unsqueeze(1)
-        question_positions = positions < cutoff
-        masked_targets[question_positions] = -100
+        masked_targets[positions <= first_eq.unsqueeze(1)] = -100
 
-        logits, _ = model(input_ids, targets=None)
-        B, T, V = logits.shape
+        logits, _ = model(input_ids, targets=target_ids)
         loss = F.cross_entropy(
-            logits.reshape(B * T, V),
+            logits.reshape(B * T, -1),
             masked_targets[:, :T].reshape(B * T),
             ignore_index=-100
         )
@@ -146,20 +143,16 @@ def evaluate_loss(model, loader, device):
         eq_mask = (input_ids == equals_id)
         first_eq = eq_mask.int().argmax(dim=1)
 
-        B, T = masked_targets.shape
+        B, T = input_ids.shape
         positions = torch.arange(T, device=device)
         positions = positions.unsqueeze(0)
         positions = positions.expand(B, T)
 
-        cutoff = first_eq.unsqueeze(1)
-        question_positions = positions < cutoff
-        masked_targets[question_positions] = -100
+        masked_targets[positions <= first_eq.unsqueeze(1)] = -100
 
-        logits, _ = model(input_ids, targets=None)
-
-        B, T, V = logits.shape
+        logits, _ = model(input_ids, targets=target_ids)
         loss = F.cross_entropy(
-            logits.reshape(B * T, V),
+            logits.reshape(B * T, -1),
             masked_targets[:, :T].reshape(B * T),
             ignore_index=-100
         )
