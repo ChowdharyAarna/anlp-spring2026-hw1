@@ -93,7 +93,7 @@ def train_one_epoch(model, loader, optimizer, device):
         targets = target_ids.reshape(B * T)
         mask = mask.reshape(B * T)
 
-        loss = F.cross_entropy(logits[mask], target_ids[mask])
+        loss = F.cross_entropy(logits[mask], targets[mask])
         
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -156,7 +156,7 @@ def evaluate_loss(model, loader, device):
         targets = target_ids.reshape(B * T)
         mask = mask.reshape(B * T)
 
-        loss = F.cross_entropy(logits[mask], target_ids[mask])
+        loss = F.cross_entropy(logits[mask], targets[mask])
         total_loss += loss.item()
         n_batches += 1
 
