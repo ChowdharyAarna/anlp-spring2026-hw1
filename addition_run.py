@@ -89,7 +89,11 @@ def train_one_epoch(model, loader, optimizer, device):
         
         pos = torch.arange(T, device=device).unsqueeze(0)
         mask = (pos >= first_eq.unsqueeze(1)) & (target_ids > 0)
-
+        logits, _ = model(input_ids, targets=target_ids)
+        V = logits.size(-1)
+        logits = logits.reshape(B * T, V)
+        targets = target_ids.reshape(B * T)
+        mask = mask.reshape(B * T)
 
         if n_batches == 0:
             masked_targets = targets[mask]
@@ -101,11 +105,7 @@ def train_one_epoch(model, loader, optimizer, device):
 
 
 
-        logits, _ = model(input_ids, targets=target_ids)
-        V = logits.size(-1)
-        logits = logits.reshape(B * T, V)
-        targets = target_ids.reshape(B * T)
-        mask = mask.reshape(B * T)
+        
 
         loss = F.cross_entropy(logits[mask], targets[mask])
         
