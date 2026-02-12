@@ -82,15 +82,16 @@ def train_one_epoch(model, loader, optimizer, device):
 
         first_eq = eq_mask.float().argmax(dim=1)           
         
-        pos = torch.arange(T, device=input_ids.device).unsqueeze(0) 
+        pos = torch.arange(T, device=device).unsqueeze(0) 
 
         mask = (pos >= first_eq.unsqueeze(1)) & (target_ids >= 0)
 
 
-        logits, _ = model(input_ids)
-        logits = logits.reshape(-1, logits.size(-1))
-        target_ids = target_ids.reshape(-1)
-        mask = mask.reshape(-1)
+        logits, _ = model(input_ids, targets=target_ids)
+        V = logits.size(-1)
+        logits = logits.reshape(B * T, V)
+        targets = target_ids.reshape(B * T)
+        mask = mask.reshape(B * T)
 
         loss = F.cross_entropy(logits[mask], target_ids[mask])
         
@@ -144,16 +145,16 @@ def evaluate_loss(model, loader, device):
 
         first_eq = eq_mask.float().argmax(dim=1)           
         
-        pos = torch.arange(T, device=input_ids.device).unsqueeze(0) 
-        mask = pos >= first_eq.unsqueeze(1)       
+        pos = torch.arange(T, device=device).unsqueeze(0) 
 
         mask = (pos >= first_eq.unsqueeze(1)) & (target_ids >= 0)
 
 
-        logits, _ = model(input_ids)
-        logits = logits.reshape(-1, logits.size(-1))
-        target_ids = target_ids.reshape(-1)
-        mask = mask.reshape(-1)
+        logits, _ = model(input_ids, targets=target_ids)
+        V = logits.size(-1)
+        logits = logits.reshape(B * T, V)
+        targets = target_ids.reshape(B * T)
+        mask = mask.reshape(B * T)
 
         loss = F.cross_entropy(logits[mask], target_ids[mask])
         total_loss += loss.item()
