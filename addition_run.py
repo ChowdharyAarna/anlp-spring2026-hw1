@@ -133,12 +133,13 @@ def train_one_epoch(model, loader, optimizer, device):
         logits = logits.reshape(B * T, V)
         targets = target_ids.reshape(B * T)
         mask = mask.reshape(B * T)
+        masked_targets2 = masked_targets.view(-1)
         
 
         # mask before passing in here
-        masked_logits = logits[mask]
-        flat_masked_targets = masked_targets.view(-1)[mask]
-        loss = F.cross_entropy(masked_logits, flat_masked_targets)
+        valid = masked_targets2 >= 0
+
+        loss = F.cross_entropy(logits[valid], masked_targets2[valid])
         
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -231,12 +232,13 @@ def evaluate_loss(model, loader, device):
         logits = logits.reshape(B * T, V)
         targets = target_ids.reshape(B * T)
         mask = mask.reshape(B * T)
+        masked_targets2 = masked_targets.view(-1)
         
 
         # mask before passing in here
-        masked_logits = logits[mask]
-        flat_masked_targets = masked_targets.view(-1)[mask]
-        loss = F.cross_entropy(masked_logits, flat_masked_targets)
+        valid = masked_targets2 >= 0
+
+        loss = F.cross_entropy(logits[valid], masked_targets2[valid])
         total_loss += loss.item()
         n_batches += 1
 
