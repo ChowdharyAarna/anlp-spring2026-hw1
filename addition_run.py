@@ -115,7 +115,7 @@ def train_one_epoch(model, loader, optimizer, device):
 
         total_loss += loss.item()
         if n_batches == 0:
-            masked_targets = target_ids[mask]
+            masked_targets = targets[mask]
             print("masked_targets has 0:", bool((masked_targets == 0).any().item()))  # should be False
             print("masked_targets min/max:", int(masked_targets.min()), int(masked_targets.max()))
             print("loss:", float(loss.item()))
