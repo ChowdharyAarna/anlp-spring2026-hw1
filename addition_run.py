@@ -93,9 +93,12 @@ def train_one_epoch(model, loader, optimizer, device):
         masked_targets[question_positions] = -100
 
         logits, _ = model(input_ids, targets=None)
-        logits_for_loss = logits.transpose(1, 2)
-
-        loss = F.cross_entropy(logits_for_loss, masked_targets, ignore_index=-100)
+        B, T, V = logits.shape
+        loss = F.cross_entropy(
+            logits.reshape(B * T, V),
+            masked_targets.reshape(B * T),
+            ignore_index=-100
+        )
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
@@ -154,9 +157,12 @@ def evaluate_loss(model, loader, device):
 
         logits, _ = model(input_ids, targets=None)
 
-        logits_for_loss = logits.transpose(1, 2)
-
-        loss = F.cross_entropy(logits_for_loss, masked_targets, ignore_index=-100)
+        B, T, V = logits.shape
+        loss = F.cross_entropy(
+            logits.reshape(B * T, V),
+            masked_targets.reshape(B * T),
+            ignore_index=-100
+        )
         total_loss += loss.item()
         n_batches += 1
 
