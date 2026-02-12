@@ -72,34 +72,34 @@ def train_one_epoch(model, loader, optimizer, device):
         input_ids = batch[0].to(device)
         target_ids = batch[1].to(device)
 
-        B, T = input_ids.shape
+        # B, T = input_ids.shape
         
-        eq_mask = (input_ids == equals_id) 
-        has_eq = eq_mask.any(dim=1)
-        if not has_eq.all():
-            raise ValueError("Found a sequence with no '=' token.")
+        # eq_mask = (input_ids == equals_id) 
+        # has_eq = eq_mask.any(dim=1)
+        # if not has_eq.all():
+        #     raise ValueError("Found a sequence with no '=' token.")
 
-        first_eq = eq_mask.float().argmax(dim=1)        
+        # first_eq = eq_mask.float().argmax(dim=1)        
             
-        labels = target_ids.clone()
+        # labels = target_ids.clone()
 
-        pos = torch.arange(T, device=device).unsqueeze(0)
+        # pos = torch.arange(T, device=device).unsqueeze(0)
 
-        labels[pos <= first_eq.unsqueeze(1)] = -1
+        # labels[pos <= first_eq.unsqueeze(1)] = -1
 
-        labels[labels == 0] = -1
+        # labels[labels == 0] = -1
         
-        logits, _ = model(input_ids, targets=target_ids)
-        V = logits.size(-1)
+        # logits, _ = model(input_ids, targets=target_ids)
+        # V = logits.size(-1)
 
-        logits_shift = logits[:, :-1, :].contiguous()     
-        labels_shift = labels[:, 1:].contiguous()         
+        # logits_shift = logits[:, :-1, :].contiguous()     
+        # labels_shift = labels[:, 1:].contiguous()         
         
-        loss = F.cross_entropy(
-            logits_shift.view(-1, V),
-            labels_shift.view(-1),
-            ignore_index=-1
-        )
+        # loss = F.cross_entropy(
+        #     logits_shift.view(-1, V),
+        #     labels_shift.view(-1),
+        #     ignore_index=-1
+        # )
 
         # logits, _ = model(input_ids)
 
@@ -114,26 +114,31 @@ def train_one_epoch(model, loader, optimizer, device):
 
         # # targets with the question part hidden (only showing the sum from the equation)
 
-        # B, T = input_ids.shape
+        B, T = input_ids.shape
 
-        # eq_mask = (input_ids == equals_id) 
-        # has_eq = eq_mask.any(dim=1)
-        # if not has_eq.all():
-        #     raise ValueError("Found a sequence with no '=' token.")
+        eq_mask = (input_ids == equals_id) 
+        has_eq = eq_mask.any(dim=1)
+        if not has_eq.all():
+            raise ValueError("Found a sequence with no '=' token.")
 
-        # first_eq = eq_mask.float().argmax(dim=1)           
+        first_eq = eq_mask.float().argmax(dim=1)           
         
-        # pos = torch.arange(T, device=device).unsqueeze(0)
-        # mask = (pos >= first_eq.unsqueeze(1)) & (target_ids > 0)
-        
-        # logits, _ = model(input_ids, targets=target_ids)
-        # V = logits.size(-1)
-        # logits = logits.reshape(B * T, V)
-        # targets = target_ids.reshape(B * T)
-        # mask = mask.reshape(B * T)
+        pos = torch.arange(T, device=device).unsqueeze(0)
+        mask = (pos >= first_eq.unsqueeze(1))
+
+        # mask targets before passing into here
+        masked_targets = target_ids.masked_fill(~mask, -100)
+        logits, _ = model(input_ids, targets=masked_targets)
+        V = logits.size(-1)
+        logits = logits.reshape(B * T, V)
+        targets = target_ids.reshape(B * T)
+        mask = mask.reshape(B * T)
         
 
-        # loss = F.cross_entropy(logits[mask], targets[mask])
+        # mask before passing in here
+        masked_logits = logits[mask]
+        masked_targets = targets[mask]
+        loss = F.cross_entropy(masked_logits, masked_targets)
         
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -142,9 +147,6 @@ def train_one_epoch(model, loader, optimizer, device):
         total_loss += loss.item()
 
         n_batches += 1
-        if n_batches == 1:
-            valid = (labels_shift != -1).sum().item()
-            print("supervised tokens in batch:", valid)
 
 
 
@@ -181,54 +183,60 @@ def evaluate_loss(model, loader, device):
         input_ids = batch[0].to(device)
         target_ids = batch[1].to(device)
 
-        B, T = input_ids.shape
-        
-        eq_mask = (input_ids == equals_id) 
-        has_eq = eq_mask.any(dim=1)
-        if not has_eq.all():
-            raise ValueError("Found a sequence with no '=' token.")
-
-        first_eq = eq_mask.float().argmax(dim=1)        
-        labels = target_ids.clone()
-
-        pos = torch.arange(T, device=device).unsqueeze(0)
-
-        labels[pos <= first_eq.unsqueeze(1)] = -1
-
-        labels[labels == 0] = -1
-
-        logits, _ = model(input_ids, targets=target_ids)
-        V = logits.size(-1)
-
-        logits_shift = logits[:, :-1, :].contiguous()     
-        labels_shift = labels[:, 1:].contiguous()         
-        
-        loss = F.cross_entropy(
-            logits_shift.view(-1, V),
-            labels_shift.view(-1),
-            ignore_index=-1
-        )
-
-        # targets with the question part hidden (only showing the sum from the equation)
         # B, T = input_ids.shape
+        
         # eq_mask = (input_ids == equals_id) 
         # has_eq = eq_mask.any(dim=1)
         # if not has_eq.all():
         #     raise ValueError("Found a sequence with no '=' token.")
 
-        # first_eq = eq_mask.float().argmax(dim=1)           
-        
-        # pos = torch.arange(T, device=device).unsqueeze(0)
-        # mask = (pos >= first_eq.unsqueeze(1)) & (target_ids > 0)
+        # first_eq = eq_mask.float().argmax(dim=1)        
+        # labels = target_ids.clone()
 
+        # pos = torch.arange(T, device=device).unsqueeze(0)
+
+        # labels[pos <= first_eq.unsqueeze(1)] = -1
+
+        # labels[labels == 0] = -1
 
         # logits, _ = model(input_ids, targets=target_ids)
         # V = logits.size(-1)
-        # logits = logits.reshape(B * T, V)
-        # targets = target_ids.reshape(B * T)
-        # mask = mask.reshape(B * T)
 
-        # loss = F.cross_entropy(logits[mask], targets[mask])
+        # logits_shift = logits[:, :-1, :].contiguous()     
+        # labels_shift = labels[:, 1:].contiguous()         
+        
+        # loss = F.cross_entropy(
+        #     logits_shift.view(-1, V),
+        #     labels_shift.view(-1),
+        #     ignore_index=-1
+        # )
+
+        # targets with the question part hidden (only showing the sum from the equation)
+        B, T = input_ids.shape
+
+        eq_mask = (input_ids == equals_id) 
+        has_eq = eq_mask.any(dim=1)
+        if not has_eq.all():
+            raise ValueError("Found a sequence with no '=' token.")
+
+        first_eq = eq_mask.float().argmax(dim=1)           
+        
+        pos = torch.arange(T, device=device).unsqueeze(0)
+        mask = (pos >= first_eq.unsqueeze(1))
+
+        # mask targets before passing into here
+        masked_targets = target_ids.masked_fill(~mask, -100)
+        logits, _ = model(input_ids, targets=masked_targets)
+        V = logits.size(-1)
+        logits = logits.reshape(B * T, V)
+        targets = target_ids.reshape(B * T)
+        mask = mask.reshape(B * T)
+        
+
+        # mask before passing in here
+        masked_logits = logits[mask]
+        masked_targets = targets[mask]
+        loss = F.cross_entropy(masked_logits, masked_targets)
         total_loss += loss.item()
         n_batches += 1
 
