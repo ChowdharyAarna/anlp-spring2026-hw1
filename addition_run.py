@@ -67,7 +67,7 @@ def train_one_epoch(model, loader, optimizer, device):
     total_loss = 0
     n_batches = 0
     equals_id = 12
-    for batch in loader:
+    for batch in tqdm(loader):
         input_ids = batch[0].to(device)
         target_ids = batch[1].to(device)
 
@@ -136,7 +136,7 @@ def evaluate_loss(model, loader, device):
     total_loss = 0
     n_batches = 0
     equals_id = 12
-    for batch in loader:
+    for batch in tqdm(loader):
         input_ids = batch[0].to(device)
         target_ids = batch[1].to(device)
 
