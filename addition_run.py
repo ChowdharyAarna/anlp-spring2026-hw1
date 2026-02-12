@@ -360,7 +360,7 @@ def check(dataset_decode, generated_tokens):
     return a, b, c, correct, out_text
 
 
-def generate(model, prompt_tokens, max_new_tokens=10, eos_id=None, device='cpu', do_sample=False, top_k=None):
+def generate(model, prompt_tokens, max_new_tokens=10, eos_id=0, device='cpu', do_sample=False, top_k=None):
     """
     Autoregressive generation: given a prompt, generate tokens one at a time.
     """
