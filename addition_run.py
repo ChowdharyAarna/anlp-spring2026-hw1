@@ -85,7 +85,7 @@ def train_one_epoch(model, loader, optimizer, device):
         pos = torch.arange(T, device=input_ids.device).unsqueeze(0) 
         mask = pos >= first_eq.unsqueeze(1)       
 
-        mask = mask & (target_ids != -100) & (target_ids != 0)
+        mask = mask & (target_ids != -1) & (target_ids != 0)
 
 
         if n_batches == 0:
@@ -156,7 +156,7 @@ def evaluate_loss(model, loader, device):
         pos = torch.arange(T, device=input_ids.device).unsqueeze(0) 
         mask = pos >= first_eq.unsqueeze(1)       
 
-        mask = mask & (target_ids != -100) & (target_ids != 0) 
+        mask = mask & (target_ids != -1) & (target_ids != 0) 
   
 
         logits, _ = model(input_ids, targets=target_ids)
