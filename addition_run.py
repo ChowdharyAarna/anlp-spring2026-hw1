@@ -16,7 +16,6 @@ from optimizer import AdamW
 from llama import Llama
 from config import LlamaConfig
 
-from torch.nn import functional as F
 import torch.nn.functional as F
 # from torch.optim import AdamW
 from tqdm import tqdm
@@ -76,7 +75,13 @@ def train_one_epoch(model, loader, optimizer, device):
         masked_targets = target_ids.clone()
 
         eq_mask = (input_ids == equals_id)
-        first_eq = eq_mask.int().argmax(dim=1)
+
+        has_eq = eq_mask.any(dim=1)
+        if not has_eq.all():
+            raise ValueError("Found a sequence with no '=' token.")
+        
+        first_eq = eq_mask.float().argmax(dim=1)
+
 
         B, T = masked_targets.shape
         positions = torch.arange(T, device=device)
