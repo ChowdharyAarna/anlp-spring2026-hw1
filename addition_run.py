@@ -83,9 +83,16 @@ def train_one_epoch(model, loader, optimizer, device):
         first_eq = eq_mask.float().argmax(dim=1)           
         
         pos = torch.arange(T, device=input_ids.device).unsqueeze(0)  
-        mask = pos > first_eq.unsqueeze(1)              
-        mask = mask & (target_ids >= 0)      
-  
+        mask = pos >= first_eq.unsqueeze(1)
+        mask = mask & (target_ids != -100)
+
+        if n_batches == 0:
+            print("SANITY target unique:", torch.unique(target_ids).tolist())
+            print("SANITY masked PAD count:",
+                  ((mask) & (target_ids == 0)).sum().item())
+            print("SANITY masked total count:",
+                  mask.sum().item())
+          
 
         logits, _ = model(input_ids, targets=target_ids)
         logits = logits.reshape(-1, logits.size(-1))
@@ -145,8 +152,8 @@ def evaluate_loss(model, loader, device):
         first_eq = eq_mask.float().argmax(dim=1)           
         
         pos = torch.arange(T, device=input_ids.device).unsqueeze(0)  
-        mask = pos > first_eq.unsqueeze(1)              
-        mask = mask & (target_ids >= 0)      
+        mask = pos >= first_eq.unsqueeze(1)
+        mask = mask & (target_ids != -100)    
   
 
         logits, _ = model(input_ids, targets=target_ids)
