@@ -72,30 +72,24 @@ def train_one_epoch(model, loader, optimizer, device):
         target_ids = batch[1].to(device)
 
         # targets with the question part hidden (only showing the sum from the equation)
-        masked_targets = target_ids.clone()
-
-        eq_mask = (input_ids == equals_id)
-
-        has_eq = eq_mask.any(dim=1)
-        if not has_eq.all():
-            raise ValueError("Found a sequence with no '=' token.")
-        
-        first_eq = eq_mask.int().argmax(dim=1)
-
 
         B, T = input_ids.shape
-        positions = torch.arange(T, device=device)
-        positions = positions.unsqueeze(0)
-        positions = positions.expand(B, T)
-
-        masked_targets[positions <= first_eq.unsqueeze(1)] = -100
+        mask = torch.zeros_like(labels, dtype=torch.bool)
+        for i in range(B):
+            eq_pos = (input_ids[i] == 12).nonzero(as_tuple=False)
+            if len(eq_pos) == 0:
+                raise ValueError("Found a sequence with no '=' token.")
+            mask[i, eq_pos[0].item():] = True
+        mask = mask & (labels >= 0)
+  0
 
         logits, _ = model(input_ids, targets=target_ids)
-        loss = F.cross_entropy(
-            logits.reshape(B * T, -1),
-            masked_targets[:, :T].reshape(B * T),
-            ignore_index=-100
-        )
+        logits = logits.reshape(-1, logits.size(-1))
+        labels = labels.reshape(-1)
+        mask = mask.reshape(-1)
+
+        loss = F.cross_entropy(logits[mask], labels[mask])
+        
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
@@ -138,24 +132,22 @@ def evaluate_loss(model, loader, device):
         target_ids = batch[1].to(device)
 
         # targets with the question part hidden (only showing the sum from the equation)
-        masked_targets = target_ids.clone()
-
-        eq_mask = (input_ids == equals_id)
-        first_eq = eq_mask.int().argmax(dim=1)
-
         B, T = input_ids.shape
-        positions = torch.arange(T, device=device)
-        positions = positions.unsqueeze(0)
-        positions = positions.expand(B, T)
-
-        masked_targets[positions <= first_eq.unsqueeze(1)] = -100
+        mask = torch.zeros_like(labels, dtype=torch.bool)
+        for i in range(B):
+            eq_pos = (input_ids[i] == 12).nonzero(as_tuple=False)
+            if len(eq_pos) == 0:
+                raise ValueError("Found a sequence with no '=' token.")
+            mask[i, eq_pos[0].item():] = True
+        mask = mask & (labels >= 0)
+  0
 
         logits, _ = model(input_ids, targets=target_ids)
-        loss = F.cross_entropy(
-            logits.reshape(B * T, -1),
-            masked_targets[:, :T].reshape(B * T),
-            ignore_index=-100
-        )
+        logits = logits.reshape(-1, logits.size(-1))
+        labels = labels.reshape(-1)
+        mask = mask.reshape(-1)
+
+        loss = F.cross_entropy(logits[mask], labels[mask])
         total_loss += loss.item()
         n_batches += 1
 
