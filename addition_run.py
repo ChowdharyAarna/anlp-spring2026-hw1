@@ -89,7 +89,7 @@ def train_one_epoch(model, loader, optimizer, device):
         positions = positions.expand(B, T)
 
         cutoff = first_eq.unsqueeze(1)
-        question_positions = positions <= cutoff
+        question_positions = positions < cutoff
         masked_targets[question_positions] = -100
 
         logits, _ = model(input_ids, targets=None)
@@ -152,7 +152,7 @@ def evaluate_loss(model, loader, device):
         positions = positions.expand(B, T)
 
         cutoff = first_eq.unsqueeze(1)
-        question_positions = positions <= cutoff
+        question_positions = positions < cutoff
         masked_targets[question_positions] = -100
 
         logits, _ = model(input_ids, targets=None)
