@@ -85,6 +85,18 @@ def train_one_epoch(model, loader, optimizer, device):
         pos = torch.arange(T, device=device).unsqueeze(0)
         mask = (pos > first_eq.unsqueeze(1)) & (target_ids >= 0) & (target_ids != 0)
 
+        if n_batches == 0:
+            print("SHAPES B,T:", input_ids.shape, target_ids.shape)
+            print("eq positions (first 8):", first_eq[:8].tolist())
+            print("mask true count:", int(mask.sum().item()), "out of", mask.numel())
+        
+            masked = target_ids[mask]
+            print("masked unique:", torch.unique(masked).tolist())
+            print("masked has PAD(0):", bool((masked == 0).any().item()))
+            print("masked has NEG:", int((masked < 0).sum().item()))
+            print("masked >= vocab:", int((masked >= model.vocab_size).sum().item()))
+
+
         logits, _ = model(input_ids, targets=target_ids)
         V = logits.size(-1)
         logits = logits.reshape(B * T, V)
