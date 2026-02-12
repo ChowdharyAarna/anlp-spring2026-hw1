@@ -96,7 +96,7 @@ def train_one_epoch(model, loader, optimizer, device):
         B, T, V = logits.shape
         loss = F.cross_entropy(
             logits.reshape(B * T, V),
-            masked_targets.reshape(B * T),
+            masked_targets[:, :T].reshape(B * T),
             ignore_index=-100
         )
         optimizer.zero_grad(set_to_none=True)
@@ -160,7 +160,7 @@ def evaluate_loss(model, loader, device):
         B, T, V = logits.shape
         loss = F.cross_entropy(
             logits.reshape(B * T, V),
-            masked_targets.reshape(B * T),
+            masked_targets[:, :T].reshape(B * T),
             ignore_index=-100
         )
         total_loss += loss.item()
