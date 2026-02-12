@@ -74,13 +74,17 @@ def train_one_epoch(model, loader, optimizer, device):
         # targets with the question part hidden (only showing the sum from the equation)
 
         B, T = input_ids.shape
-        mask = torch.zeros_like(target_ids, dtype=torch.bool)
-        for i in range(B):
-            eq_pos = (input_ids[i] == 12).nonzero(as_tuple=False)
-            if len(eq_pos) == 0:
-                raise ValueError("Found a sequence with no '=' token.")
-            mask[i, eq_pos[0].item():] = True
-        mask = mask & (target_ids >= 0)
+
+        eq_mask = (input_ids == equals_id) 
+        has_eq = eq_mask.any(dim=1)
+        if not has_eq.all():
+            raise ValueError("Found a sequence with no '=' token.")
+
+        first_eq = eq_mask.float().argmax(dim=1)           
+        
+        pos = torch.arange(T, device=input_ids.device).unsqueeze(0)  
+        mask = pos >= first_eq.unsqueeze(1)              
+        mask = mask & (target_ids >= 0)      
   
 
         logits, _ = model(input_ids, targets=target_ids)
@@ -133,13 +137,22 @@ def evaluate_loss(model, loader, device):
 
         # targets with the question part hidden (only showing the sum from the equation)
         B, T = input_ids.shape
-        mask = torch.zeros_like(target_ids, dtype=torch.bool)
-        for i in range(B):
-            eq_pos = (input_ids[i] == 12).nonzero(as_tuple=False)
-            if len(eq_pos) == 0:
-                raise ValueError("Found a sequence with no '=' token.")
-            mask[i, eq_pos[0].item():] = True
-        mask = mask & (target_ids >= 0)
+        eq_mask = (input_ids == equals_id) 
+        has_eq = eq_mask.any(dim=1)
+        if not has_eq.all():
+            raise ValueError("Found a sequence with no '=' token.")
+
+        first_eq = eq_mask.float().argmax(dim=1)           
+        
+        pos = torch.arange(T, device=input_ids.device).unsqueeze(0)  
+        mask = pos >= first_eq.unsqueeze(1)              
+        mask = mask & (target_ids >= 0)      
+  
+
+        logits, _ = model(input_ids, targets=target_ids)
+        logits = logits.reshape(-1, logits.size(-1))
+        target_ids = target_ids.reshape(-1)
+        mask = mask.reshape(-1)
   
 
         logits, _ = model(input_ids, targets=target_ids)
