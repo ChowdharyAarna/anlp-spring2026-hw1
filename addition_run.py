@@ -89,22 +89,12 @@ def train_one_epoch(model, loader, optimizer, device):
         
         pos = torch.arange(T, device=device).unsqueeze(0)
         mask = (pos >= first_eq.unsqueeze(1)) & (target_ids > 0)
+        
         logits, _ = model(input_ids, targets=target_ids)
         V = logits.size(-1)
         logits = logits.reshape(B * T, V)
         targets = target_ids.reshape(B * T)
         mask = mask.reshape(B * T)
-
-        if n_batches == 0:
-            masked_targets = targets[mask]
-            print("mask true count:", int(mask.sum().item()), "/", mask.numel())
-            print("masked_targets numel:", masked_targets.numel())
-            print("masked_targets has 0:", bool((masked_targets == 0).any().item()))
-            print("masked_targets min/max:", int(masked_targets.min().item()), int(masked_targets.max().item()))
-            print("first 50 masked targets:", masked_targets[:50].tolist())
-
-
-
         
 
         loss = F.cross_entropy(logits[mask], targets[mask])
@@ -114,13 +104,7 @@ def train_one_epoch(model, loader, optimizer, device):
         optimizer.step()
 
         total_loss += loss.item()
-        if n_batches == 0:
-            masked_targets = targets[mask]
-            print("masked_targets has 0:", bool((masked_targets == 0).any().item()))  # should be False
-            print("masked_targets min/max:", int(masked_targets.min()), int(masked_targets.max()))
-            print("loss:", float(loss.item()))
-        if n_batches == 1:
-            break
+
         n_batches += 1
     
 
