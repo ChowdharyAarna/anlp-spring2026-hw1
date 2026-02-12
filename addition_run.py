@@ -64,14 +64,42 @@ def train_one_epoch(model, loader, optimizer, device):
         token id for "=" is 12. 
     """
     # # todo
-    # model.train()
-    # total_loss = 0
-    # n_batches = 0
-    # for ...
+    model.train()
+    total_loss = 0
+    n_batches = 0
+    equals_id = 12
+    for batch in loader:
+        input_ids = batch[0].to(device)
+        target_ids = batch[1].to(device)
 
-    # return total_loss / n_batches
+        # targets with the question part hidden (only showing the sum from the equation)
+        masked_targets = target_ids.clone()
 
-    raise NotImplementedError
+        eq_mask = (input_ids == equals_id)
+        first_eq = eq_mask.int().argmax(dim=1)
+
+        B, T = masked_targets.shape
+        positions = torch.arange(T, device=device)
+        positions = positions.unsqueeze(0)
+        positions = positions.expand(B, T)
+
+        cutoff = first_eq.unsqueeze(1)
+        question_positions = positions <= cutoff
+        masked_targets[question_positions] = -100
+
+        logits, _ = model(input_ids)
+        logits_for_loss = logits.transpose(1, 2)
+
+        loss = F.cross_entropy(logits_for_loss, masked_targets, ignore_index=-100)
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+        n_batches += 1
+
+
+    return total_loss / n_batches
 
 
 @torch.no_grad()
@@ -96,14 +124,38 @@ def evaluate_loss(model, loader, device):
         token id for "=" is 12. 
     """
     # todo
-    # model.eval()
-    # total_loss = 0
-    # n_batches = 0
-    # for ...
+    model.eval()
+    total_loss = 0
+    n_batches = 0
+    equals_id = 12
+    for batch in loader:
+        input_ids = batch[0].to(device)
+        target_ids = batch[1].to(device)
 
-    # return total_loss / n_batches
+        # targets with the question part hidden (only showing the sum from the equation)
+        masked_targets = target_ids.clone()
 
-    raise NotImplementedError
+        eq_mask = (input_ids == equals_id)
+        first_eq = eq_mask.int().argmax(dim=1)
+
+        B, T = masked_targets.shape
+        positions = torch.arange(T, device=device)
+        positions = positions.unsqueeze(0)
+        positions = positions.expand(B, T)
+
+        cutoff = first_eq.unsqueeze(1)
+        question_positions = positions <= cutoff
+        masked_targets[question_positions] = -100
+
+        logits, _ = model(input_ids)
+        logits_for_loss = logits.transpose(1, 2)
+
+        loss = F.cross_entropy(logits_for_loss, masked_targets, ignore_index=-100)
+        total_loss += loss.item()
+        n_batches += 1
+
+
+    return total_loss / n_batches
 
 
 
