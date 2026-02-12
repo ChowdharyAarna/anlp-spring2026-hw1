@@ -83,7 +83,8 @@ def train_one_epoch(model, loader, optimizer, device):
         first_eq = eq_mask.float().argmax(dim=1)           
         
         pos = torch.arange(T, device=device).unsqueeze(0)
-        mask = (pos > first_eq.unsqueeze(1)) & (target_ids >= 0) & (target_ids != 0)
+        mask = (pos >= first_eq.unsqueeze(1)) & (target_ids >= 0)
+
 
         # if n_batches == 0:
         #     print("SHAPES B,T:", input_ids.shape, target_ids.shape)
@@ -156,7 +157,8 @@ def evaluate_loss(model, loader, device):
         first_eq = eq_mask.float().argmax(dim=1)           
         
         pos = torch.arange(T, device=device).unsqueeze(0)
-        mask = (pos > first_eq.unsqueeze(1)) & (target_ids >= 0) & (target_ids != 0)
+        mask = (pos >= first_eq.unsqueeze(1)) & (target_ids >= 0)
+
 
 
         logits, _ = model(input_ids, targets=target_ids)
