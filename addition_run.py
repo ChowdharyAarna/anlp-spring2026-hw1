@@ -88,17 +88,29 @@ def train_one_epoch(model, loader, optimizer, device):
         labels[pos <= first_eq.unsqueeze(1)] = -1
 
         labels[labels == 0] = -1
+        
+        logits, _ = model(input_ids, targets=target_ids)
+        V = logits.size(-1)
 
-        logits, _ = model(input_ids)
-
-        logits_shift = logits[:, :-1, :].contiguous()
-        labels_shift = labels[:, 1:].contiguous()  
-
+        logits_shift = logits[:, :-1, :].contiguous()     
+        labels_shift = labels[:, 1:].contiguous()         
+        
         loss = F.cross_entropy(
-            logits_shift.view(-1, logits_shift.size(-1)),
+            logits_shift.view(-1, V),
             labels_shift.view(-1),
             ignore_index=-1
         )
+
+        # logits, _ = model(input_ids)
+
+        # logits_shift = logits[:, :-1, :].contiguous()
+        # labels_shift = labels[:, 1:].contiguous()  
+
+        # loss = F.cross_entropy(
+        #     logits_shift.view(-1, logits_shift.size(-1)),
+        #     labels_shift.view(-1),
+        #     ignore_index=-1
+        # )
 
         # # targets with the question part hidden (only showing the sum from the equation)
 
@@ -185,13 +197,14 @@ def evaluate_loss(model, loader, device):
 
         labels[labels == 0] = -1
 
-        logits, _ = model(input_ids)
+        logits, _ = model(input_ids, targets=target_ids)
+        V = logits.size(-1)
 
-        logits_shift = logits[:, :-1, :].contiguous()
-        labels_shift = labels[:, 1:].contiguous()  
-
+        logits_shift = logits[:, :-1, :].contiguous()     
+        labels_shift = labels[:, 1:].contiguous()         
+        
         loss = F.cross_entropy(
-            logits_shift.view(-1, logits_shift.size(-1)),
+            logits_shift.view(-1, V),
             labels_shift.view(-1),
             ignore_index=-1
         )
