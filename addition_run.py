@@ -71,6 +71,9 @@ def train_one_epoch(model, loader, optimizer, device):
         
         input_ids = batch[0].to(device)
         target_ids = batch[1].to(device)
+
+        B, T = input_ids.shape
+        
         eq_mask = (input_ids == equals_id) 
         has_eq = eq_mask.any(dim=1)
         if not has_eq.all():
@@ -166,6 +169,8 @@ def evaluate_loss(model, loader, device):
         input_ids = batch[0].to(device)
         target_ids = batch[1].to(device)
 
+        B, T = input_ids.shape
+        
         eq_mask = (input_ids == equals_id) 
         has_eq = eq_mask.any(dim=1)
         if not has_eq.all():
