@@ -88,7 +88,7 @@ def train_one_epoch(model, loader, optimizer, device):
         first_eq = eq_mask.float().argmax(dim=1)           
         
         pos = torch.arange(T, device=device).unsqueeze(0)
-        mask = (pos >= first_eq.unsqueeze(1)) & (target_ids >= 0)
+        mask = (pos >= first_eq.unsqueeze(1)) & (target_ids > 0)
 
 
         if n_batches == 0:
@@ -114,10 +114,15 @@ def train_one_epoch(model, loader, optimizer, device):
         optimizer.step()
 
         total_loss += loss.item()
-        n_batches += 1
         if n_batches == 0:
+            masked_targets = target_ids[mask]
+            print("masked_targets has 0:", bool((masked_targets == 0).any().item()))  # should be False
+            print("masked_targets min/max:", int(masked_targets.min()), int(masked_targets.max()))
             print("loss:", float(loss.item()))
             break
+        n_batches += 1
+    
+
 
 
     return total_loss / n_batches
@@ -163,7 +168,7 @@ def evaluate_loss(model, loader, device):
         first_eq = eq_mask.float().argmax(dim=1)           
         
         pos = torch.arange(T, device=device).unsqueeze(0)
-        mask = (pos >= first_eq.unsqueeze(1)) & (target_ids >= 0)
+        mask = (pos >= first_eq.unsqueeze(1)) & (target_ids > 0)
 
 
         logits, _ = model(input_ids, targets=target_ids)
@@ -365,7 +370,7 @@ def check(dataset_decode, generated_tokens):
     return a, b, c, correct, out_text
 
 
-def generate(model, prompt_tokens, max_new_tokens=10, eos_id=0, device='cpu', do_sample=False, top_k=None):
+def generate(model, prompt_tokens, max_new_tokens=10, eos_id=None, device='cpu', do_sample=False, top_k=None):
     """
     Autoregressive generation: given a prompt, generate tokens one at a time.
     """
