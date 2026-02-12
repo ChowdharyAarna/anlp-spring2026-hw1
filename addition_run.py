@@ -83,7 +83,7 @@ def train_one_epoch(model, loader, optimizer, device):
         first_eq = eq_mask.float().argmax(dim=1)           
         
         pos = torch.arange(T, device=input_ids.device).unsqueeze(0)  
-        mask = pos >= first_eq.unsqueeze(1)              
+        mask = pos > first_eq.unsqueeze(1)              
         mask = mask & (target_ids >= 0)      
   
 
@@ -145,14 +145,8 @@ def evaluate_loss(model, loader, device):
         first_eq = eq_mask.float().argmax(dim=1)           
         
         pos = torch.arange(T, device=input_ids.device).unsqueeze(0)  
-        mask = pos >= first_eq.unsqueeze(1)              
+        mask = pos > first_eq.unsqueeze(1)              
         mask = mask & (target_ids >= 0)      
-  
-
-        logits, _ = model(input_ids, targets=target_ids)
-        logits = logits.reshape(-1, logits.size(-1))
-        target_ids = target_ids.reshape(-1)
-        mask = mask.reshape(-1)
   
 
         logits, _ = model(input_ids, targets=target_ids)
@@ -541,6 +535,19 @@ def model_testing(args):
 
 
     accuracy, incorrect, results = test_model(model, test_dataset, test_dataset.decode, max_gen_len=10, device=device)
+    print("\n=== DIAGNOSTIC: first 20 predictions ===")
+    for i in range(20):
+        prompt = results[i][0]
+        out_text = results[i][2]
+        print(f"{i:02d}  {prompt} -> {out_text}")
+    
+    print("\n=== DIAGNOSTIC: first 20 incorrect ===")
+    for i in range(min(20, len(incorrect))):
+        prompt = incorrect[i][0]
+        out_tokens = incorrect[i][1]
+        a, b, c = incorrect[i][2], incorrect[i][3], incorrect[i][4]
+        print(f"{i:02d}  {prompt} -> a={a}, b={b}, c={c}  tokens={out_tokens.tolist()[:30]}")
+
 
     print('Accuracy:', accuracy)
     print(f"test length {len(test_dataset)}")
