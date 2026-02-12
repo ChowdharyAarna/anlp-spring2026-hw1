@@ -68,8 +68,13 @@ def train_one_epoch(model, loader, optimizer, device):
     n_batches = 0
     equals_id = 12
     for batch in tqdm(loader):
+        
         input_ids = batch[0].to(device)
         target_ids = batch[1].to(device)
+        if n_batches == 0:
+            print("unique input tokens (sorted):", torch.unique(input_ids).tolist())
+            print("unique target tokens (sorted):", torch.unique(target_ids).tolist())
+
 
         # targets with the question part hidden (only showing the sum from the equation)
 
@@ -86,16 +91,14 @@ def train_one_epoch(model, loader, optimizer, device):
         mask = (pos >= first_eq.unsqueeze(1)) & (target_ids >= 0)
 
 
-        # if n_batches == 0:
-        #     print("SHAPES B,T:", input_ids.shape, target_ids.shape)
-        #     print("eq positions (first 8):", first_eq[:8].tolist())
-        #     print("mask true count:", int(mask.sum().item()), "out of", mask.numel())
-        
-        #     masked = target_ids[mask]
-        #     print("masked unique:", torch.unique(masked).tolist())
-        #     print("masked has PAD(0):", bool((masked == 0).any().item()))
-        #     print("masked has NEG:", int((masked < 0).sum().item()))
-        #     print("masked >= vocab:", int((masked >= model.vocab_size).sum().item()))
+        if n_batches == 0:
+            masked_targets = target_ids[mask]
+            print("mask true count:", int(mask.sum().item()), "/", mask.numel())
+            print("masked_targets numel:", masked_targets.numel())
+            print("masked_targets has 0:", bool((masked_targets == 0).any().item()))
+            print("masked_targets min/max:", int(masked_targets.min().item()), int(masked_targets.max().item()))
+            print("first 50 masked targets:", masked_targets[:50].tolist())
+
 
 
         logits, _ = model(input_ids, targets=target_ids)
@@ -112,6 +115,9 @@ def train_one_epoch(model, loader, optimizer, device):
 
         total_loss += loss.item()
         n_batches += 1
+        if n_batches == 0:
+            print("loss:", float(loss.item()))
+            break
 
 
     return total_loss / n_batches
@@ -158,7 +164,6 @@ def evaluate_loss(model, loader, device):
         
         pos = torch.arange(T, device=device).unsqueeze(0)
         mask = (pos >= first_eq.unsqueeze(1)) & (target_ids >= 0)
-
 
 
         logits, _ = model(input_ids, targets=target_ids)
