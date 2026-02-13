@@ -1,0 +1,39 @@
+Args: {'command': 'train', 'use_gpu': True, 'seed': 1337, 'epochs': 10, 'batch_size': 1024, 'lr': 0.001, 'save_dir': 'addition_models/ablation_4', 'train_file': 'data/addition_train.txt', 'val_file': 'data/addition_dev.txt', 'dim': 12, 'n_layers': 3, 'n_heads': 4, 'n_kv_heads': 4, 'capacity': 5808844800000}
+model parameters are 5508
+17576994 data points saved to data/addition_train.txt
+3515399 data points saved to data/addition_dev.txt
+  0%|          | 0/17166 [00:00<?, ?it/s]  0%|          | 0/17166 [00:03<?, ?it/s]
+Traceback (most recent call last):
+  File "/kaggle/working/anlp-spring2026-hw1/addition_run.py", line 689, in <module>
+    model_training(args)
+  File "/kaggle/working/anlp-spring2026-hw1/addition_run.py", line 360, in model_training
+    train_loss = train_one_epoch(model, train_loader, optimizer, device)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/anlp-spring2026-hw1/addition_run.py", line 131, in train_one_epoch
+    logits, _ = model(input_ids, targets=masked_targets)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/anlp-spring2026-hw1/llama.py", line 298, in forward
+    h = layer(h)
+        ^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/anlp-spring2026-hw1/llama.py", line 239, in forward
+    self_attention = self.attention.forward(normed_x)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/anlp-spring2026-hw1/llama.py", line 156, in forward
+    query, key = apply_rotary_emb(query, key, self.head_dim, self.max_seq_len)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/working/anlp-spring2026-hw1/rope.py", line 59, in apply_rotary_emb
+    query_real, query_imag = query.float().reshape(query.shape[:-1] + (-1, 2)).unbind(-1)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: shape '[1024, 16, 4, -1, 2]' is invalid for input of size 196608
