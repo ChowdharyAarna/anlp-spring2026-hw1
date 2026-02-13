@@ -72,48 +72,6 @@ def train_one_epoch(model, loader, optimizer, device):
         input_ids = batch[0].to(device)
         target_ids = batch[1].to(device)
 
-        # B, T = input_ids.shape
-        
-        # eq_mask = (input_ids == equals_id) 
-        # has_eq = eq_mask.any(dim=1)
-        # if not has_eq.all():
-        #     raise ValueError("Found a sequence with no '=' token.")
-
-        # first_eq = eq_mask.float().argmax(dim=1)        
-            
-        # labels = target_ids.clone()
-
-        # pos = torch.arange(T, device=device).unsqueeze(0)
-
-        # labels[pos <= first_eq.unsqueeze(1)] = -1
-
-        # labels[labels == 0] = -1
-        
-        # logits, _ = model(input_ids, targets=target_ids)
-        # V = logits.size(-1)
-
-        # logits_shift = logits[:, :-1, :].contiguous()     
-        # labels_shift = labels[:, 1:].contiguous()         
-        
-        # loss = F.cross_entropy(
-        #     logits_shift.view(-1, V),
-        #     labels_shift.view(-1),
-        #     ignore_index=-1
-        # )
-
-        # logits, _ = model(input_ids)
-
-        # logits_shift = logits[:, :-1, :].contiguous()
-        # labels_shift = labels[:, 1:].contiguous()  
-
-        # loss = F.cross_entropy(
-        #     logits_shift.view(-1, logits_shift.size(-1)),
-        #     labels_shift.view(-1),
-        #     ignore_index=-1
-        # )
-
-        # # targets with the question part hidden (only showing the sum from the equation)
-
         B, T = input_ids.shape
 
         eq_mask = (input_ids == equals_id) 
@@ -184,35 +142,6 @@ def evaluate_loss(model, loader, device):
         input_ids = batch[0].to(device)
         target_ids = batch[1].to(device)
 
-        # B, T = input_ids.shape
-        
-        # eq_mask = (input_ids == equals_id) 
-        # has_eq = eq_mask.any(dim=1)
-        # if not has_eq.all():
-        #     raise ValueError("Found a sequence with no '=' token.")
-
-        # first_eq = eq_mask.float().argmax(dim=1)        
-        # labels = target_ids.clone()
-
-        # pos = torch.arange(T, device=device).unsqueeze(0)
-
-        # labels[pos <= first_eq.unsqueeze(1)] = -1
-
-        # labels[labels == 0] = -1
-
-        # logits, _ = model(input_ids, targets=target_ids)
-        # V = logits.size(-1)
-
-        # logits_shift = logits[:, :-1, :].contiguous()     
-        # labels_shift = labels[:, 1:].contiguous()         
-        
-        # loss = F.cross_entropy(
-        #     logits_shift.view(-1, V),
-        #     labels_shift.view(-1),
-        #     ignore_index=-1
-        # )
-
-        # targets with the question part hidden (only showing the sum from the equation)
         B, T = input_ids.shape
 
         eq_mask = (input_ids == equals_id) 
@@ -619,18 +548,6 @@ def model_testing(args):
 
 
     accuracy, incorrect, results = test_model(model, test_dataset, test_dataset.decode, max_gen_len=10, device=device)
-    print("\n=== DIAGNOSTIC: first 20 predictions ===")
-    for i in range(20):
-        prompt = results[i][0]
-        out_text = results[i][2]
-        print(f"{i:02d}  {prompt} -> {out_text}")
-    
-    print("\n=== DIAGNOSTIC: first 20 incorrect ===")
-    for i in range(min(20, len(incorrect))):
-        prompt = incorrect[i][0]
-        out_tokens = incorrect[i][1]
-        a, b, c = incorrect[i][2], incorrect[i][3], incorrect[i][4]
-        print(f"{i:02d}  {prompt} -> a={a}, b={b}, c={c}  tokens={out_tokens.tolist()[:30]}")
 
 
     print('Accuracy:', accuracy)
